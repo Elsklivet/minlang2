@@ -1,15 +1,16 @@
 use std::{iter::Peekable, str::Chars, fmt::Display};
 
 #[derive(Clone, Debug)]
-pub(crate) struct TokenLocation<'source> {
-    line: usize,
-    col: usize,
-    span: &'source str,
+pub(crate) struct TokenLocation {
+    pub(crate) line: usize,
+    pub(crate) col: usize,
+    pub(crate) len: usize,
+    pub(crate) span: String,
 }
 
-impl<'source> TokenLocation<'source> {
-    pub(crate) fn new(text: &'source str, line: usize, col: usize, start: usize, end: usize) -> TokenLocation<'source> {
-        TokenLocation { line: line, col: col, span: &text[start..=end] }
+impl<'source> TokenLocation {
+    pub(crate) fn new(text: &String, line: usize, col: usize, start: usize, end: usize) -> TokenLocation {
+        TokenLocation { line: line, col: col, len: end-start+1, span: text[start..=end].into() }
     }
 }
 
@@ -77,24 +78,30 @@ impl Display for TokenKind {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct Token<'source> {
-    kind: TokenKind,
-    loc: TokenLocation<'source>,
+pub(crate) struct Token {
+    pub(crate) kind: TokenKind,
+    pub(crate) loc: TokenLocation,
 }
 
-impl<'source> Token<'source> {
-    pub(crate) fn new(kind: TokenKind, loc: TokenLocation<'source>) -> Token<'source> {
+impl Token {
+    pub(crate) fn new(kind: TokenKind, loc: TokenLocation) -> Token {
         Token { kind, loc }
     }
 }
 
-pub(crate) struct TokenStream<'source> {
-    tokens: Vec<Token<'source>>,
+pub(crate) struct TokenStream {
+    tokens: Vec<Token>,
     curr: usize,
 }
 
-impl<'source> Iterator for TokenStream<'source> {
-    type Item = Token<'source>;
+impl TokenStream {
+    pub(crate) fn new(tokens: Vec<Token>) -> TokenStream {
+        TokenStream { tokens, curr: 0 }
+    }
+}
+
+impl Iterator for TokenStream {
+    type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.curr >= self.tokens.len() {
@@ -107,23 +114,22 @@ impl<'source> Iterator for TokenStream<'source> {
     }
 }
 
-pub(crate) struct Lexer<'source> {
-    text: &'source str,
-    chars: Peekable<Chars<'source>>,
+pub(crate) struct Lexer {
+    text: String,
     line: usize,
     col: usize,
     curr_char: usize,
 }
 
 #[derive(Debug)]
-pub(crate) enum LexError<'source> {
-    UnexpectedToken(TokenKind, TokenLocation<'source>),
-    ExpectedToken(TokenKind, TokenLocation<'source>),
+pub(crate) enum LexError {
+    UnexpectedToken(TokenKind, TokenLocation),
+    ExpectedToken(TokenKind, TokenLocation),
 }
 
-type LexResult<'source> = Result<TokenStream<'source>, LexError<'source>>;
+type LexResult<'source> = Result<TokenStream, LexError>;
 
-impl<'source> Display for LexError<'source> {
+impl Display for LexError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.clone() {
             LexError::UnexpectedToken(_, loc) => {
@@ -142,11 +148,10 @@ impl<'source> Display for LexError<'source> {
     }
 }
 
-impl<'source> Lexer<'source> {
-    pub(crate) fn new(text: &'source str) -> Lexer<'source> {
+impl Lexer {
+    pub(crate) fn new(text: String) -> Lexer {
         Lexer {
             text: text,
-            chars: text.chars().peekable(),
             line: 1,
             col: 1,
             curr_char: 0,
@@ -154,11 +159,11 @@ impl<'source> Lexer<'source> {
     }
 
     fn peek(&mut self) -> Option<char> {
-        self.chars.peek().copied()
+        self.text.chars().skip(self.curr_char).peekable().peek().copied()
     }
 
     fn next(&mut self) -> Option<char> {
-        if let Some(chr) = self.chars.next() {
+        if let Some(chr) = self.text.chars().skip(self.curr_char).next() {
             self.curr_char += 1;
             match chr {
                 '\n' | '\r' => { self.line += 1; self.col = 0;}
@@ -170,16 +175,16 @@ impl<'source> Lexer<'source> {
         None
     }
 
-    fn emit(&self, kind: TokenKind) -> Token<'source> {
-        Token { kind, loc: TokenLocation::new(self.text, self.line, self.col, self.curr_char-1, self.curr_char-1) }
+    fn emit(&self, kind: TokenKind) -> Token {
+        Token { kind, loc: TokenLocation::new(&self.text, self.line, self.col, self.curr_char-1, self.curr_char-1) }
     }
 
-    fn emit_large(&self, kind: TokenKind, col: usize, from: usize, to: usize) -> Token<'source> {
-        Token { kind, loc: TokenLocation::new(self.text, self.line, col, from, to) }
+    fn emit_large(&self, kind: TokenKind, col: usize, from: usize, to: usize) -> Token {
+        Token { kind, loc: TokenLocation::new(&self.text, self.line, col, from, to) }
     }
 
-    pub(crate) fn lex(&mut self) -> LexResult<'source> {
-        let mut tokens: Vec<Token<'source>> = Vec::new();
+    pub(crate) fn lex(&mut self) -> LexResult {
+        let mut tokens: Vec<Token> = Vec::new();
 
         let table_start = self.curr_char;
         let table_size: usize = if let Some(char) = self.peek() {
@@ -200,18 +205,18 @@ impl<'source> Lexer<'source> {
                             } else if nchar == ']' {
                                 break;
                             } else if nchar != ']' {
-                                return Err(LexError::ExpectedToken(TokenKind::EndDefine, TokenLocation::new(self.text, self.line, self.col, self.curr_char, self.curr_char)));
+                                return Err(LexError::ExpectedToken(TokenKind::EndDefine, TokenLocation::new(&self.text, self.line, self.col, self.curr_char, self.curr_char)));
                             }
                         }
 
                         str::parse::<usize>(&num_string).unwrap_or(256)
-                    } else { return Err(LexError::UnexpectedToken(TokenKind::Eos, TokenLocation::new(self.text, self.line, self.col, self.curr_char, self.curr_char))); }
+                    } else { return Err(LexError::UnexpectedToken(TokenKind::Eos, TokenLocation::new(&self.text, self.line, self.col, self.curr_char, self.curr_char))); }
                 } else { 256 }
             } else { 256 }
         } else { 256 };
 
         // Add table size token.
-        tokens.push(Token { kind: TokenKind::Table(table_size), loc: TokenLocation::new(self.text, 1, 1, 0, self.curr_char) });
+        tokens.push(Token { kind: TokenKind::Table(table_size), loc: TokenLocation::new(&self.text, 1, 1, 0, self.curr_char - 1) });
 
         while let Some(char) = self.next() {
             match char {
@@ -305,7 +310,7 @@ impl<'source> Lexer<'source> {
 
                         tokens.push(Token { 
                             kind: TokenKind::Number(str::parse::<usize>(&num_string).unwrap_or(0)),
-                            loc: TokenLocation { line: self.line, col: start_col, span: &self.text[start_char..=self.curr_char-1] }
+                            loc: TokenLocation::new(&self.text, self.line, start_col, start_char, self.curr_char-1)
                         });
                     }
                 }
@@ -323,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_it_works() {
-        let mut lexer = Lexer::new("[1024]\n>>>+-*/(1234)");
+        let mut lexer = Lexer::new("[1024]\n>>>+-*/(1234)".into());
         let lex_result = lexer.lex();
 
         assert!(lex_result.is_ok());

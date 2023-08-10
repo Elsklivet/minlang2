@@ -1,4 +1,7 @@
 mod lexer;
+mod ast;
+mod parser;
+mod program;
 
 use crate::lexer::*;
 
