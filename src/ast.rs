@@ -30,13 +30,13 @@
 
 use crate::lexer::Token;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum ParameterKind {
     Numeric(usize),
     Saved,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum StatementKind {
     Table(usize),
     Inc,
@@ -60,7 +60,7 @@ pub(crate) enum StatementKind {
     FlipSign,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Statement {
     pub(crate) kind: StatementKind,
     pub(crate) token: Token,

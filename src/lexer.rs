@@ -90,7 +90,7 @@ impl Token {
 }
 
 pub(crate) struct TokenStream {
-    tokens: Vec<Token>,
+    pub(crate) tokens: Vec<Token>,
     curr: usize,
 }
 
@@ -166,7 +166,7 @@ impl Lexer {
         if let Some(chr) = self.text.chars().skip(self.curr_char).next() {
             self.curr_char += 1;
             match chr {
-                '\n' | '\r' => { self.line += 1; self.col = 0;}
+                '\n' => { self.line += 1; self.col = 0;}
                 _ => { self.col += 1; }
             }
             return Some(chr);
@@ -191,7 +191,6 @@ impl Lexer {
             if char == '[' {
                 self.next();
                 if let Some(char2) = self.next() {
-                    println!("Have {} at {}", char2, self.curr_char);
                     if char2.is_numeric() {
                         // Got a table size                        
                         // Build a string of the size
@@ -199,7 +198,6 @@ impl Lexer {
                         num_string.push(char2);
 
                         while let Some(nchar) = self.next() {
-                            println!("Have {} at {}", nchar, self.curr_char);
                             if nchar.is_numeric() {
                                 num_string.push(nchar);
                             } else if nchar == ']' {
@@ -315,7 +313,6 @@ impl Lexer {
                     }
                 }
             }
-            println!("Got '{}' at {}", char, self.curr_char);
         }
 
         return Ok(TokenStream { tokens, curr: 0 });
