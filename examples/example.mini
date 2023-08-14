@@ -10,7 +10,8 @@ Defines a function at location zero on the function table
     Subtracts one from the the register if its val is zero
     ?(0)-
     <
-    ; Moves back to original register and ends method and if
+    ; Moves back to original register and ends if
+    ; End method
 
 :(1)
     Notice that any character outside of the instruction set characters is ignored

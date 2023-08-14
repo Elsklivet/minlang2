@@ -6,9 +6,25 @@ pub(crate) const DEFAULT_TABLE_SIZE: usize = 256;
 
 #[derive(Debug)]
 pub(crate) struct Table {
-    array: Vec<isize>,
-    curr: usize,
-    saved: usize,
+    pub(crate) array: Vec<isize>,
+    pub(crate) size: usize,
+    pub(crate) curr: usize,
+    pub(crate) saved: usize,
+}
+
+impl std::ops::Index<usize> for Table {
+    type Output = isize;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.array.get(index).expect(format_args!("Index {} is out of bounds for table of size {}.", index, self.array.len()).to_string().as_str())
+    }
+}
+
+impl std::ops::IndexMut<usize> for Table {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        let length = self.array.len();
+        self.array.get_mut(index).expect(format_args!("Index {} is out of bounds for table of size {}.", index, length).to_string().as_str())
+    }
 }
 
 impl Table {
@@ -17,6 +33,7 @@ impl Table {
         array.resize(size, 0isize);
         Table {
             array,
+            size,
             curr: 0,
             saved: usize::MAX,
         }

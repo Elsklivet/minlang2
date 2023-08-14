@@ -1,3 +1,5 @@
 /target
 *.lock
+*.exe
 .vscode/
+flamegraph.svg

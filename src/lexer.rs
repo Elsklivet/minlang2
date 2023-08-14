@@ -186,7 +186,6 @@ impl Lexer {
     pub(crate) fn lex(&mut self) -> LexResult {
         let mut tokens: Vec<Token> = Vec::new();
 
-        let table_start = self.curr_char;
         let table_size: usize = if let Some(char) = self.peek() {
             if char == '[' {
                 self.next();
@@ -297,6 +296,7 @@ impl Lexer {
                         let start_col = self.col;
 
                         let mut num_string = String::new();
+                        num_string.push(char);
                         while let Some(nchar) = self.peek() {
                             if nchar.is_numeric() {
                                 self.next();

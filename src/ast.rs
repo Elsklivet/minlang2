@@ -30,7 +30,7 @@
 
 use crate::lexer::Token;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum ParameterKind {
     Numeric(usize),
     Saved,
@@ -58,6 +58,7 @@ pub(crate) enum StatementKind {
     CallFn(usize),
     PrintNewline,
     FlipSign,
+    End,
 }
 
 #[derive(Debug, Clone)]

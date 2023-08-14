@@ -2,11 +2,14 @@ mod lexer;
 mod ast;
 mod parser;
 mod program;
+mod vm;
 
 use clap::{Parser};
 use std::fs;
 use std::path::Path;
 use std::process::exit;
+
+use crate::vm::Vm;
 
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -19,9 +22,15 @@ struct Args {
     /// Whether to stop at the parsing phase
     #[arg(short, long)]
     parse: bool,
-    /// Whether to verbosely print AST
+    /// Whether to run the program in a VM
+    #[arg(short, long)]
+    run: bool,
+    /// Whether to verbosely print information from the ending phase
     #[arg(short, long)]
     verbose: bool,
+    /// Show the table after execution completes
+    #[arg(short, long)]
+    show_registers: bool,
 }
 
 fn main() {
@@ -70,5 +79,7 @@ fn main() {
         }
     }
 
-    println!("Finished.");
+    if args.run {
+        Vm::new(prog).run(args.show_registers);
+    }
 }
